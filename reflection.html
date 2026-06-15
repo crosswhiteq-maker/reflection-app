@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>リフレクション</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f4f1ea;
+    --paper-deep: #ebe6db;
+    --ink: #2a2722;
+    --ink-soft: #5a544a;
+    --ink-faint: #9a9387;
+    --accent: #8b3a2a;
+    --accent-soft: #b85544;
+    --line: #d8d2c3;
+    --shadow: rgba(42, 39, 34, 0.08);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    background-color: var(--paper);
+    color: var(--ink);
+    line-height: 1.8;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(139, 58, 42, 0.02) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(42, 39, 34, 0.02) 0%, transparent 50%);
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* ヘッダー */
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 48px;
+    height: 1px;
+    background-color: var(--accent);
+  }
+
+  .header-mark {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 13px;
+    letter-spacing: 0.4em;
+    color: var(--ink-faint);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  .header h1 {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: var(--ink);
+    margin-bottom: 12px;
+    transition: color 0.3s ease;
+  }
+
+  .header .subtitle {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+    letter-spacing: 0.1em;
+    font-style: italic;
+    transition: opacity 0.3s ease;
+  }
+
+  .date-display {
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--ink-faint);
+    letter-spacing: 0.2em;
+    font-family: 'Shippori Mincho', serif;
+  }
+
+  /* タブ */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 48px;
+    border-bottom: 1px solid var(--line);
+    justify-content: center;
+  }
+
+  .tab {
+    flex: 0 1 auto;
+    min-width: 140px;
+    padding: 14px 24px;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 14px;
+    letter-spacing: 0.15em;
+    color: var(--ink-faint);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    margin-bottom: -1px;
+    position: relative;
+  }
+
+  .tab:hover {
+    color: var(--ink-soft);
+  }
+
+  .tab.active {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .tab .tab-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--accent-soft);
+    margin-left: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    vertical-align: middle;
+  }
+
+  .tab .tab-indicator.has-draft {
+    opacity: 1;
+  }
+
+  /* ステップ */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+
+  .step {
+    position: relative;
+    padding-left: 56px;
+  }
+
+  .step-number {
+    position: absolute;
+    left: 0;
+    top: 4px;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--ink);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    background-color: var(--paper);
+    transition: all 0.3s ease;
+  }
+
+  .step:hover .step-number,
+  .step:focus-within .step-number {
+    background-color: var(--ink);
+    color: var(--paper);
+    transform: scale(1.05);
+  }
+
+  .step-question {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 14px;
+    line-height: 1.7;
+    letter-spacing: 0.03em;
+  }
+
+  .step textarea {
+    width: 100%;
+    min-height: 96px;
+    padding: 16px 18px;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--ink);
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    resize: vertical;
+    transition: all 0.3s ease;
+    -webkit-appearance: none;
+  }
+
+  .step textarea:focus {
+    outline: none;
+    border-color: var(--ink-soft);
+    background-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+
+  .step textarea::placeholder {
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+
+  /* 最終ステップを少し強調 */
+  .step.is-final .step-number {
+    background-color: var(--accent);
+    color: var(--paper);
+    border-color: var(--accent);
+  }
+
+  .step.is-final .step-question {
+    color: var(--accent);
+  }
+
+  /* 信念のリフレクション用：チップ選択 */
+  .chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    padding: 10px 18px;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .chip:hover {
+    border-color: var(--ink-soft);
+    color: var(--ink);
+  }
+
+  .chip.selected {
+    background-color: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  .step.is-final .chip.selected {
+    background-color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* 「その他」の自由記述欄：選択時のみ表示 */
+  .other-input-wrapper {
+    margin-top: 14px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.25s ease, margin-top 0.35s ease;
+  }
+
+  .other-input-wrapper.show {
+    max-height: 100px;
+    opacity: 1;
+  }
+
+  .other-input-wrapper input {
+    width: 100%;
+    padding: 12px 16px;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--ink);
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    -webkit-appearance: none;
+  }
+
+  .other-input-wrapper input:focus {
+    outline: none;
+    border-color: var(--ink-soft);
+    background-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+
+  .other-input-wrapper input::placeholder {
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+
+  /* アクションボタン */
+  .actions {
+    margin-top: 56px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 12px;
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 16px 24px;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 15px;
+    letter-spacing: 0.2em;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-primary {
+    background-color: var(--ink);
+    color: var(--paper);
+    border: 1px solid var(--ink);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px var(--shadow);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    background-color: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--ink-soft);
+    color: var(--ink);
+  }
+
+  /* 自動保存のインジケータ */
+  .save-indicator {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    font-family: 'Shippori Mincho', serif;
+    height: 16px;
+    transition: opacity 0.3s ease;
+  }
+
+  /* トースト通知 */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background-color: var(--ink);
+    color: var(--paper);
+    padding: 14px 32px;
+    border-radius: 2px;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 14px;
+    letter-spacing: 0.15em;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  /* 確認モーダル */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(42, 39, 34, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    padding: 24px;
+  }
+
+  .modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal {
+    background-color: var(--paper);
+    padding: 32px;
+    max-width: 400px;
+    width: 100%;
+    border-radius: 2px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+  }
+
+  .modal-overlay.show .modal {
+    transform: scale(1);
+  }
+
+  .modal h2 {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 18px;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+
+  .modal p {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-bottom: 24px;
+    line-height: 1.7;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .modal-actions .btn {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+
+  /* レスポンシブ */
+  @media (max-width: 640px) {
+    .container {
+      padding: 32px 20px 60px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+    }
+
+    .step {
+      padding-left: 0;
+    }
+
+    .step-number {
+      position: static;
+      margin-bottom: 12px;
+    }
+
+    .step-question {
+      font-size: 16px;
+    }
+
+    .steps {
+      gap: 32px;
+    }
+
+    .tab {
+      min-width: 0;
+      padding: 12px 16px;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      flex: 1;
+    }
+  }
+
+  /* PCで画面の余白を広く */
+  @media (min-width: 900px) {
+    .container {
+      padding-top: 64px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="header-mark">Reflection</div>
+      <h1 id="title">リフレクション</h1>
+      <div class="subtitle" id="subtitle">― 静かに、自分と向き合う ―</div>
+      <div class="date-display" id="dateDisplay"></div>
+    </header>
+
+    <nav class="tabs" id="tabs"></nav>
+
+    <main class="steps" id="steps"></main>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="copyBtn">Keepにコピー</button>
+      <button class="btn btn-secondary" id="clearBtn">入力をクリア</button>
+    </div>
+
+    <div class="save-indicator" id="saveIndicator"></div>
+  </div>
+
+  <div class="toast" id="toast">コピーしました</div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h2>入力をクリアしますか？</h2>
+      <p>現在表示中のリフレクションの入力内容が削除されます。<br>この操作は取り消せません。</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="confirmClear">クリアする</button>
+        <button class="btn btn-primary" id="cancelClear">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ====== テンプレート定義 ======
+  // 新しいリフレクション種別を追加する場合は、ここに新しいオブジェクトを追加し、
+  // TEMPLATE_ORDERに追加するだけで済む構造です
+  const TEMPLATES = {
+    emotion: {
+      id: 'emotion',
+      title: '感情のリフレクション',
+      tabLabel: '感情',
+      subtitle: '― 静かに、自分の心と向き合う ―',
+      steps: [
+        {
+          question: 'どんな出来事をリフレクションしたいですか',
+          placeholder: '今日、心に残った出来事を書いてみましょう…'
+        },
+        {
+          question: 'その出来事からどんな感情を抱きましたか',
+          placeholder: '湧き上がった感情を、できるだけ具体的に…'
+        },
+        {
+          question: 'なぜその感情を感じたのですか',
+          placeholder: '感情の奥にある理由を探ってみましょう…'
+        },
+        {
+          question: 'その出来事に対してどうであれば満足できますか',
+          placeholder: '理想の状態を思い描いてみましょう…'
+        },
+        {
+          question: 'ステップ1〜4を俯瞰して、何が大事でしょうか',
+          placeholder: '全体を見渡したとき、見えてきたことは…'
+        }
+      ]
+    },
+    skill: {
+      id: 'skill',
+      title: '技術のリフレクション',
+      tabLabel: '技術',
+      subtitle: '― 自分の技を、丁寧に見つめ直す ―',
+      steps: [
+        {
+          question: '時間をかけずにできるようになったことは？',
+          placeholder: '以前は手間取っていたが、今は自然にこなせること…'
+        },
+        {
+          question: '追求するようになったことは？',
+          placeholder: 'こだわりや、深く探求したくなった対象…'
+        },
+        {
+          question: '気付けるようになったことは？',
+          placeholder: '以前は見過ごしていたが、今は察知できること…'
+        },
+        {
+          question: '直感が働くようになったことは？',
+          placeholder: '考えるより先に、感覚で判断できること…'
+        },
+        {
+          question: '決めかねてしまうことは？',
+          placeholder: '判断に迷い、保留してしまう領域…'
+        },
+        {
+          question: '曲解していたことは？',
+          placeholder: '誤って理解していた、思い込んでいたこと…'
+        }
+      ]
+    },
+    interest: {
+      id: 'interest',
+      title: '興味のリフレクション',
+      tabLabel: '興味',
+      subtitle: '― 自分の関心の源泉に、耳を澄ます ―',
+      steps: [
+        {
+          question: 'あなたが主体的・自主的に追求したいと思うことは何でしょうか',
+          placeholder: '誰に頼まれずとも、自分から深めたくなること…'
+        },
+        {
+          question: 'あなたの小さなこだわりエピソードを具体的に教えてください',
+          placeholder: '人には伝わりにくいけれど、自分が大切にしている習慣や好み…'
+        }
+      ]
+    },
+    belief: {
+      id: 'belief',
+      type: 'belief',
+      title: '信念のリフレクション',
+      tabLabel: '信念',
+      subtitle: '― 自分の軸を、ことばで確かめる ―',
+      categories: ['仕事', 'お金', 'ライフスタイル', '時間'],
+      contentTypes: ['何を大事にしているのか', '何をしたくないのか', 'その他'],
+      otherTrigger: 'その他',
+      bodyPlaceholder: 'いま信じていること、譲れないこと、大切にしている考え方…'
+    }
+  };
+
+  // 種別の表示順
+  const TEMPLATE_ORDER = ['emotion', 'skill', 'interest', 'belief'];
+
+  // localStorageキー（種別ごとに独立させる）
+  const DRAFT_KEY = (id) => `reflection_${id}_draft_v1`;
+  const ACTIVE_KEY = 'reflection_active_template_v1';
+
+  // ====== 状態 ======
+  let activeTemplateId = TEMPLATE_ORDER[0];
+  let currentTextareas = [];
+  // 信念のリフレクション用の状態
+  let beliefState = { category: null, contentType: null, body: '', otherText: '' };
+  let saveTimer = null;
+  let debounceTimer = null;
+
+  // ====== 日付フォーマット ======
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    const day = days[date.getDay()];
+    return `${y}.${m}.${d}（${day}）`;
+  }
+
+  function formatDateForTitle(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  document.getElementById('dateDisplay').textContent = formatDate(new Date());
+
+  // ====== タブ生成 ======
+  const tabsContainer = document.getElementById('tabs');
+  TEMPLATE_ORDER.forEach((id) => {
+    const tpl = TEMPLATES[id];
+    const tabEl = document.createElement('button');
+    tabEl.className = 'tab';
+    tabEl.dataset.templateId = id;
+    tabEl.innerHTML = `${tpl.tabLabel}<span class="tab-indicator" data-indicator="${id}"></span>`;
+    tabEl.addEventListener('click', () => switchTemplate(id));
+    tabsContainer.appendChild(tabEl);
+  });
+
+  // ====== ステップ描画 ======
+  const stepsContainer = document.getElementById('steps');
+
+  function renderTemplate(templateId) {
+    const tpl = TEMPLATES[templateId];
+
+    // ヘッダー更新
+    document.getElementById('title').textContent = tpl.title;
+    document.getElementById('subtitle').textContent = tpl.subtitle;
+
+    // タブのactive状態更新
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.templateId === templateId);
+    });
+
+    // 信念タイプは別ルートで描画
+    if (tpl.type === 'belief') {
+      renderBeliefTemplate(tpl);
+      return;
+    }
+
+    // ステップ描画（通常テンプレート）
+    stepsContainer.innerHTML = '';
+    tpl.steps.forEach((step, index) => {
+      const isFinal = index === tpl.steps.length - 1;
+      const stepEl = document.createElement('section');
+      stepEl.className = 'step' + (isFinal ? ' is-final' : '');
+      stepEl.innerHTML = `
+        <div class="step-number">${index + 1}</div>
+        <p class="step-question">${step.question}</p>
+        <textarea
+          data-index="${index}"
+          placeholder="${step.placeholder}"
+          rows="3"
+        ></textarea>
+      `;
+      stepsContainer.appendChild(stepEl);
+    });
+
+    currentTextareas = Array.from(stepsContainer.querySelectorAll('textarea'));
+
+    // 入力イベント登録
+    currentTextareas.forEach(ta => {
+      ta.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(saveDraft, 500);
+      });
+    });
+
+    // 下書きを復元
+    loadDraft();
+  }
+
+  // ====== 信念のリフレクション描画 ======
+  function renderBeliefTemplate(tpl) {
+    // 状態を初期化（loadDraftで上書きされる）
+    beliefState = { category: null, contentType: null, body: '', otherText: '' };
+    currentTextareas = []; // 通常タイプの参照は使わない
+
+    stepsContainer.innerHTML = '';
+
+    // ステップ1: カテゴリー選択
+    const categoryStep = document.createElement('section');
+    categoryStep.className = 'step';
+    categoryStep.innerHTML = `
+      <div class="step-number">1</div>
+      <p class="step-question">どのカテゴリーについての信念ですか</p>
+      <div class="chip-group" id="categoryChips">
+        ${tpl.categories.map(cat => `
+          <button type="button" class="chip" data-category="${cat}">${cat}</button>
+        `).join('')}
+      </div>
+    `;
+    stepsContainer.appendChild(categoryStep);
+
+    // ステップ2: 内容種類選択
+    const typeStep = document.createElement('section');
+    typeStep.className = 'step';
+    typeStep.innerHTML = `
+      <div class="step-number">2</div>
+      <p class="step-question">どんな内容を書きますか</p>
+      <div class="chip-group" id="contentTypeChips">
+        ${tpl.contentTypes.map(t => `
+          <button type="button" class="chip" data-content-type="${t}">${t}</button>
+        `).join('')}
+      </div>
+      <div class="other-input-wrapper" id="otherInputWrapper">
+        <input type="text" id="otherInput" placeholder="「その他」の内容を一言で…" maxlength="50" />
+      </div>
+    `;
+    stepsContainer.appendChild(typeStep);
+
+    // ステップ3: 本文
+    const bodyStep = document.createElement('section');
+    bodyStep.className = 'step is-final';
+    bodyStep.innerHTML = `
+      <div class="step-number">3</div>
+      <p class="step-question">あなたの信念を、ことばにしてください</p>
+      <textarea id="beliefBody" placeholder="${tpl.bodyPlaceholder}" rows="5"></textarea>
+    `;
+    stepsContainer.appendChild(bodyStep);
+
+    // ====== イベント登録 ======
+    // カテゴリー選択
+    document.querySelectorAll('#categoryChips .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        beliefState.category = chip.dataset.category;
+        document.querySelectorAll('#categoryChips .chip').forEach(c => {
+          c.classList.toggle('selected', c.dataset.category === beliefState.category);
+        });
+        scheduleSave();
+      });
+    });
+
+    // 内容種類選択
+    document.querySelectorAll('#contentTypeChips .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        beliefState.contentType = chip.dataset.contentType;
+        document.querySelectorAll('#contentTypeChips .chip').forEach(c => {
+          c.classList.toggle('selected', c.dataset.contentType === beliefState.contentType);
+        });
+        // 「その他」選択時に自由記述欄を表示
+        const wrapper = document.getElementById('otherInputWrapper');
+        const showOther = beliefState.contentType === tpl.otherTrigger;
+        wrapper.classList.toggle('show', showOther);
+        if (!showOther) {
+          beliefState.otherText = '';
+          document.getElementById('otherInput').value = '';
+        }
+        scheduleSave();
+      });
+    });
+
+    // その他テキスト入力
+    document.getElementById('otherInput').addEventListener('input', (e) => {
+      beliefState.otherText = e.target.value;
+      scheduleSave();
+    });
+
+    // 本文入力
+    document.getElementById('beliefBody').addEventListener('input', (e) => {
+      beliefState.body = e.target.value;
+      scheduleSave();
+    });
+
+    // 下書き復元
+    loadBeliefDraft();
+  }
+
+  function scheduleSave() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(saveDraft, 500);
+  }
+
+  // ====== タブの下書きインジケータ更新 ======
+  function updateDraftIndicators() {
+    TEMPLATE_ORDER.forEach((id) => {
+      const indicator = document.querySelector(`.tab-indicator[data-indicator="${id}"]`);
+      if (!indicator) return;
+      try {
+        const saved = localStorage.getItem(DRAFT_KEY(id));
+        let hasDraft = false;
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (TEMPLATES[id].type === 'belief') {
+            // 信念タイプ：いずれかの項目が選択/入力されているか
+            hasDraft = !!(data.category || data.contentType || (data.body && data.body.trim()) || (data.otherText && data.otherText.trim()));
+          } else {
+            hasDraft = Array.isArray(data.values) && data.values.some(v => v && v.trim().length > 0);
+          }
+        }
+        indicator.classList.toggle('has-draft', hasDraft);
+      } catch (e) {
+        indicator.classList.remove('has-draft');
+      }
+    });
+  }
+
+  // ====== テンプレート切り替え ======
+  function switchTemplate(templateId) {
+    if (!TEMPLATES[templateId]) return;
+    if (templateId === activeTemplateId) return;
+
+    // 切り替え前に現在の下書きを保存（インジケータは出さない）
+    saveDraft({ silent: true });
+
+    activeTemplateId = templateId;
+    localStorage.setItem(ACTIVE_KEY, templateId);
+
+    renderTemplate(templateId);
+    updateDraftIndicators();
+
+    // スクロール位置を上に
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ====== localStorageの保存・復元 ======
+  function loadDraft() {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY(activeTemplateId));
+      if (!saved) return;
+      const data = JSON.parse(saved);
+      if (data && Array.isArray(data.values)) {
+        currentTextareas.forEach((ta, i) => {
+          if (data.values[i]) ta.value = data.values[i];
+        });
+      }
+    } catch (e) {
+      console.warn('下書きの復元に失敗:', e);
+    }
+  }
+
+  function loadBeliefDraft() {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY(activeTemplateId));
+      if (!saved) return;
+      const data = JSON.parse(saved);
+      const tpl = TEMPLATES[activeTemplateId];
+
+      if (data.category) {
+        beliefState.category = data.category;
+        const chip = document.querySelector(`#categoryChips .chip[data-category="${data.category}"]`);
+        if (chip) chip.classList.add('selected');
+      }
+      if (data.contentType) {
+        beliefState.contentType = data.contentType;
+        const chip = document.querySelector(`#contentTypeChips .chip[data-content-type="${data.contentType}"]`);
+        if (chip) chip.classList.add('selected');
+        if (data.contentType === tpl.otherTrigger) {
+          document.getElementById('otherInputWrapper').classList.add('show');
+        }
+      }
+      if (data.otherText) {
+        beliefState.otherText = data.otherText;
+        document.getElementById('otherInput').value = data.otherText;
+      }
+      if (data.body) {
+        beliefState.body = data.body;
+        document.getElementById('beliefBody').value = data.body;
+      }
+    } catch (e) {
+      console.warn('信念下書きの復元に失敗:', e);
+    }
+  }
+
+  function saveDraft(opts = {}) {
+    try {
+      const tpl = TEMPLATES[activeTemplateId];
+      let hasContent = false;
+      let payload;
+
+      if (tpl.type === 'belief') {
+        hasContent = !!(beliefState.category || beliefState.contentType || (beliefState.body && beliefState.body.trim()) || (beliefState.otherText && beliefState.otherText.trim()));
+        payload = { ...beliefState, updatedAt: new Date().toISOString() };
+      } else {
+        const values = currentTextareas.map(ta => ta.value);
+        hasContent = values.some(v => v.trim().length > 0);
+        payload = { values, updatedAt: new Date().toISOString() };
+      }
+
+      if (hasContent) {
+        localStorage.setItem(DRAFT_KEY(activeTemplateId), JSON.stringify(payload));
+        if (!opts.silent) showSaveIndicator();
+      } else {
+        localStorage.removeItem(DRAFT_KEY(activeTemplateId));
+      }
+      updateDraftIndicators();
+    } catch (e) {
+      console.warn('下書きの保存に失敗:', e);
+    }
+  }
+
+  // 自動保存インジケータ
+  const saveIndicator = document.getElementById('saveIndicator');
+  function showSaveIndicator() {
+    saveIndicator.textContent = '― 自動保存しました ―';
+    saveIndicator.style.opacity = '1';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveIndicator.style.opacity = '0';
+    }, 2000);
+  }
+
+  // ====== 出力フォーマット生成 ======
+  function buildOutput() {
+    const tpl = TEMPLATES[activeTemplateId];
+    const titleDate = formatDateForTitle(new Date());
+    let output = `${titleDate}_【${tpl.title}】\n`;
+    output += '─────────────\n\n';
+
+    if (tpl.type === 'belief') {
+      // 信念タイプの出力
+      output += `■ カテゴリー\n${beliefState.category || '（未選択）'}\n\n`;
+
+      let contentTypeLine = beliefState.contentType || '（未選択）';
+      // 「その他」かつ自由記述がある場合は併記
+      if (beliefState.contentType === tpl.otherTrigger && beliefState.otherText && beliefState.otherText.trim()) {
+        contentTypeLine = `その他（${beliefState.otherText.trim()}）`;
+      }
+      output += `■ 内容\n${contentTypeLine}\n\n`;
+
+      const bodyText = (beliefState.body || '').trim();
+      output += `■ 本文\n${bodyText || '（記入なし）'}`;
+
+      return output.trimEnd();
+    }
+
+    // 通常タイプの出力
+    tpl.steps.forEach((step, i) => {
+      const value = currentTextareas[i].value.trim();
+      output += `■ ${step.question}\n`;
+      output += value ? `${value}\n\n` : '（記入なし）\n\n';
+    });
+
+    return output.trimEnd();
+  }
+
+  // ====== コピー機能 ======
+  const copyBtn = document.getElementById('copyBtn');
+  const toast = document.getElementById('toast');
+
+  copyBtn.addEventListener('click', () => {
+    const text = buildOutput();
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('コピーしました');
+      }).catch(() => {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  });
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showToast('コピーしました');
+    } catch (e) {
+      showToast('コピーに失敗しました');
+    }
+    document.body.removeChild(ta);
+  }
+
+  function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2200);
+  }
+
+  // ====== クリア機能（モーダル確認付き） ======
+  const clearBtn = document.getElementById('clearBtn');
+  const modalOverlay = document.getElementById('modalOverlay');
+  const cancelClear = document.getElementById('cancelClear');
+  const confirmClear = document.getElementById('confirmClear');
+
+  clearBtn.addEventListener('click', () => {
+    modalOverlay.classList.add('show');
+  });
+
+  cancelClear.addEventListener('click', () => {
+    modalOverlay.classList.remove('show');
+  });
+
+  confirmClear.addEventListener('click', () => {
+    const tpl = TEMPLATES[activeTemplateId];
+    if (tpl.type === 'belief') {
+      // 信念タイプのクリア
+      beliefState = { category: null, contentType: null, body: '', otherText: '' };
+      document.querySelectorAll('#categoryChips .chip').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('#contentTypeChips .chip').forEach(c => c.classList.remove('selected'));
+      document.getElementById('otherInputWrapper').classList.remove('show');
+      document.getElementById('otherInput').value = '';
+      document.getElementById('beliefBody').value = '';
+    } else {
+      currentTextareas.forEach(ta => { ta.value = ''; });
+    }
+    localStorage.removeItem(DRAFT_KEY(activeTemplateId));
+    updateDraftIndicators();
+    modalOverlay.classList.remove('show');
+    showToast('クリアしました');
+  });
+
+  // モーダル背景タップで閉じる
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) {
+      modalOverlay.classList.remove('show');
+    }
+  });
+
+  // ====== 初期化 ======
+  // 前回開いていたタブを復元
+  const savedActive = localStorage.getItem(ACTIVE_KEY);
+  if (savedActive && TEMPLATES[savedActive]) {
+    activeTemplateId = savedActive;
+  }
+  renderTemplate(activeTemplateId);
+  updateDraftIndicators();
+</script>
+</body>
+</html>
